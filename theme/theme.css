@@ -1,0 +1,552 @@
+/* @theme theme */
+@import 'default';
+/**
+ * kg-theme.css
+ * KG Motors 統合テーマ（Marp用・単一ファイル）
+ *
+ * Marpのthemeディレクティブは1つだけ有効なため、
+ * 全テンプレートをclass切り替えで実装する。
+ *
+ * ┌─────────────────────────────────────────────────┐
+ * │ スライド種別とclassの対応                        │
+ * ├─────────────────────────────────────────────────┤
+ * │ main (デフォルト) … class指定なし               │
+ * │ title (カバー)    … <!-- class: title -->       │
+ * │ top   (区切り)    … <!-- class: top -->         │
+ * └─────────────────────────────────────────────────┘
+ *
+ * Header・Footer はMarpが自動生成する要素を活用する。
+ * - header : 見出し行（main では h1+アクセント棒を表示）
+ * - footer : 黄色バー＋著作権テキスト
+ */
+
+/* ════════════════════════════════════════════════════
+   COLOR TOKENS
+   ════════════════════════════════════════════════════ */
+:root {
+  --kg-yellow:       #f5c518;
+  --kg-yellow-light: #fdf0a0;
+  --kg-black:        #1a1a1a;
+  --kg-charcoal:     #3d3d3d;
+  --kg-body-text:    #4a4a4a;
+  --kg-white:        #ffffff;
+  --kg-gray-100:     #f5f5f5;
+  --kg-gray-200:     #e0e0e0;
+  --kg-gray-panel:   #e4e4e4;
+
+  --kg-font: 'Meiryo', 'MS Gothic', 'Hiragino Kaku Gothic Pro', sans-serif;
+
+  --kg-footer-h:      32px;
+  --kg-header-h:      88px;
+  --kg-accent-w:      28px;
+  --kg-accent-h:      6px;
+}
+
+/* ════════════════════════════════════════════════════
+   SECTION 基本スタイル
+   ════════════════════════════════════════════════════ */
+section {
+  font-family: var(--kg-font);
+  background-color: var(--kg-white);
+  color:            var(--kg-black);
+  width:  1280px;
+  height: 720px;
+  position: relative;
+  padding: var(--kg-header-h) 60px var(--kg-footer-h) 60px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ════════════════════════════════════════════════════
+   FOOTER … Marp の footer 要素に黄色バーを当てる
+   ════════════════════════════════════════════════════ */
+footer {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--kg-footer-h);
+  background-color: var(--kg-yellow);
+  color: var(--kg-black);
+  font-family: var(--kg-font);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: var(--kg-footer-h);
+  padding-left: 24px;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+/* ════════════════════════════════════════════════════
+   HEADER … Marp の header 要素に見出し行を当てる
+   ════════════════════════════════════════════════════ */
+header {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--kg-header-h);
+  z-index: 1;
+}
+/* アクセント棒 … header の左端に配置 */
+header::before {
+  content: '';
+  position: absolute;
+  left: 60px;
+  top: 48px;
+  width: var(--kg-accent-w);
+  height: var(--kg-accent-h);
+  background-color: var(--kg-charcoal);
+}
+
+/* ════════════════════════════════════════════════════
+   MAIN TEMPLATE … h1は absolute で左上固定
+   ════════════════════════════════════════════════════ */
+section h1 {
+  font-family: var(--kg-font);
+  font-size:  28px;
+  font-weight: 700;
+  color: var(--kg-black);
+  margin: 0;
+  position: absolute;
+  top: 48px;
+  left: calc(60px + var(--kg-accent-w) + 16px);
+  right: 60px;
+  line-height: 1.3;
+  z-index: 1;
+}
+
+/* ── 本文 ── */
+section p,
+section ul,
+section ol {
+  font-family: var(--kg-font);
+  font-size:  18px;
+  font-weight: 400;
+  color: var(--kg-body-text);
+  margin: 0 0 16px;
+  padding-left: calc(var(--kg-accent-w) + 16px);
+  line-height: 1.6;
+}
+section ul, section ol {
+  list-style-type: disc;
+  padding-left: calc(var(--kg-accent-w) + 36px);
+}
+section ul li, section ol li { margin-bottom: 8px; }
+
+/* ── サブ見出し ── */
+section h2 {
+  font-family: var(--kg-font);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--kg-black);
+  margin: 24px 0 8px;
+  padding-left: calc(var(--kg-accent-w) + 16px);
+}
+section h3 {
+  font-family: var(--kg-font);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--kg-charcoal);
+  margin: 16px 0 6px;
+  padding-left: calc(var(--kg-accent-w) + 16px);
+}
+
+/* ════════════════════════════════════════════════════
+   TOP TEMPLATE … section.top
+   ════════════════════════════════════════════════════ */
+section.top {
+  background-color: var(--kg-yellow);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 80px;
+}
+/* header を非表示（アクセント棒も不要） */
+section.top header {
+  display: none;
+}
+/* footer を透明にして著作権テキストのみ残す（左下に配置） */
+section.top footer {
+  background-color: transparent;
+  bottom: 28px;
+  left: 80px;
+  right: auto;
+  height: auto;
+  line-height: 1;
+  color: var(--kg-black);
+}
+/* h1 を垂直中央に配置 */
+section.top h1 {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 80px;
+  right: 80px;
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--kg-black);
+  margin: 0;
+  padding-left: 0;
+  line-height: 1.2;
+  z-index: 0;
+}
+/* 本文を非表示 */
+section.top p,
+section.top ul,
+section.top ol { display: none; }
+
+/* ════════════════════════════════════════════════════
+   TITLE TEMPLATE … section.title
+   左右分割。ロゴは md 側で <img> で入れる。
+   - background: linear-gradient で左白・右グレー
+   - header を非表示
+   - footer を非表示
+   - h1, p は左側に配置（flex column 縦央）
+   - img … ロゴの位置（左下）に absolute 配置
+   - img が無い場合は ::before でプレースホルダー枠を描画
+   ════════════════════════════════════════════════════ */
+section.title {
+  background:
+    linear-gradient(
+      to right,
+      var(--kg-white)      0%,
+      var(--kg-white)      50%,
+      var(--kg-gray-panel) 50%,
+      var(--kg-gray-panel) 100%
+    );
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 calc(50% + 48px) 0 48px;
+}
+/* header・footer を非表示 */
+section.title header { display: none; }
+section.title footer { display: none; }
+
+/* h1 を static に戻す */
+section.title h1 {
+  position: static;
+  top: auto; left: auto; right: auto;
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--kg-black);
+  margin: 0 0 60px;
+  padding-left: 0;
+  line-height: 1.2;
+  z-index: 0;
+}
+
+/* p 1行目（社名）・2行目（日付） */
+section.title p {
+  font-family: var(--kg-font);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--kg-black);
+  margin: 0 0 2px;
+  padding-left: 0;
+  line-height: 1.6;
+}
+section.title p + p {
+  font-weight: 400;
+  color: var(--kg-body-text);
+  font-size: 15px;
+}
+
+/* ── ロゴ画像 … md側で ![ロゴ](./imgs/kg_logo.png) と書けば此处に配置される ── */
+section.title img {
+  position: absolute;
+  bottom: 48px;
+  left: 48px;
+  width: 140px;
+  height: auto;
+  max-height: 80px;
+  object-fit: contain;
+  object-position: left;
+  z-index: 1;
+}
+
+/* ── 画像が無い場合のロゴプレースホルダー枠 ── */
+section.title::before {
+  content: '会社ロゴ画像';
+  position: absolute;
+  bottom: 48px;
+  left: 48px;
+  width: 140px;
+  height: 58px;
+  background-color: var(--kg-gray-panel);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--kg-font);
+  font-size: 13px;
+  color: #999;
+  box-sizing: border-box;
+}
+
+/* ── 右パネル「カスタム画像」プレースホルダー ── */
+section.title::after {
+  content: 'カスタム画像';
+  position: absolute;
+  top: 50%;
+  left: 75%;
+  transform: translate(-50%, -50%);
+  color: #999999;
+  font-family: var(--kg-font);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+}
+/* 2つ目の画像がある場合はプレースホルダーを非表示 */
+section.title:has(img:nth-of-type(2))::after {
+  display: none;
+}
+
+/* ── 右パネルのカスタム画像（2つ目の画像） ── */
+section.title img:nth-of-type(2) {
+  position: absolute;
+  top: 50%;
+  left: 75%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: auto;
+  max-width: 500px;
+  max-height: 500px;
+  bottom: auto;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* ════════════════════════════════════════════════════
+   COMPONENTS（main_template内で使用）
+   ════════════════════════════════════════════════════ */
+
+/* ── Callout ── */
+.kg-callout {
+  background-color: var(--kg-yellow-light);
+  border-left: 4px solid var(--kg-yellow);
+  border-radius: 0 6px 6px 0;
+  padding: 14px 20px;
+  margin: 16px 0;
+  font-family: var(--kg-font);
+  font-size: 15px;
+  color: var(--kg-black);
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+.kg-callout strong { font-weight: 700; }
+.kg-callout.warning {
+  background-color: #f0f0f0;
+  border-left-color: var(--kg-charcoal);
+}
+
+/* ── Two-column ── */
+.kg-two-col {
+  display: flex;
+  flex-direction: row;
+  gap: 40px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.kg-two-col > .col {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Table ── */
+.kg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--kg-font);
+  font-size: 14px;
+  color: var(--kg-black);
+  margin: 16px 0;
+}
+.kg-table thead {
+  background-color: var(--kg-black);
+  color: var(--kg-white);
+}
+.kg-table thead th {
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  border: none;
+}
+.kg-table tbody tr {
+  border-bottom: 1px solid var(--kg-gray-200);
+}
+.kg-table tbody tr:nth-child(even) {
+  background-color: var(--kg-gray-100);
+}
+.kg-table tbody td {
+  padding: 9px 16px;
+  border: none;
+  vertical-align: middle;
+}
+
+/* ── Badge ── */
+.kg-badge {
+  display: inline-block;
+  background-color: var(--kg-yellow);
+  color: var(--kg-black);
+  font-family: var(--kg-font);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.2px;
+  vertical-align: middle;
+}
+.kg-badge.dark {
+  background-color: var(--kg-black);
+  color: var(--kg-white);
+}
+
+/* ── Divider ── */
+.kg-divider {
+  border: none;
+  border-top: 1px solid var(--kg-gray-200);
+  margin: 20px 0;
+  width: 100%;
+}
+
+/* ── Spec（スペック表示） ── */
+.kg-spec {
+  display: flex;
+  align-items: stretch;
+  margin: 8px 0;
+  font-family: var(--kg-font);
+  line-height: 1;
+}
+.kg-spec-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--kg-charcoal);
+  color: var(--kg-white);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 6px;
+  min-width: 120px;
+  box-sizing: border-box;
+}
+.kg-spec-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--kg-gray-100);
+  color: var(--kg-black);
+  font-size: 24px;
+  font-weight: 700;
+  padding: 12px 48px;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+/* ── Info Panel（番号付きラベル＋箇条書き） ── */
+.kg-info-panel {
+  display: flex;
+  align-items: stretch;
+  margin: 12px 0;
+  font-family: var(--kg-font);
+  line-height: 1.5;
+}
+.kg-info-panel-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--kg-yellow);
+  color: var(--kg-black);
+  font-size: 18px;
+  font-weight: 700;
+  padding: 16px 24px;
+  border-radius: 6px;
+  min-width: 140px;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.kg-info-panel-content {
+  display: flex;
+  align-items: center;
+  background-color: var(--kg-gray-100);
+  color: var(--kg-black);
+  font-size: 16px;
+  font-weight: 400;
+  padding: 16px 32px;
+  border-radius: 6px;
+  flex: 1;
+  margin-left: 12px;
+  box-sizing: border-box;
+}
+.kg-info-panel-content ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kg-info-panel-content ul li {
+  margin-bottom: 4px;
+  padding-left: 1em;
+  text-indent: -1em;
+}
+.kg-info-panel-content ul li::before {
+  content: '・';
+  margin-right: 0.3em;
+}
+
+/* ── Card（ヘッダー付きカード） ── */
+.kg-card {
+  font-family: var(--kg-font);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+.kg-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background-color: var(--kg-charcoal);
+  color: var(--kg-white);
+  font-size: 20px;
+  font-weight: 700;
+  padding: 14px 24px;
+}
+.kg-card-header img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.kg-card-body {
+  background-color: var(--kg-gray-100);
+  color: var(--kg-black);
+  padding: 20px 28px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.kg-card-body strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.kg-card-body ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kg-card-body ul li {
+  margin-bottom: 4px;
+  padding-left: 1em;
+  text-indent: -1em;
+}
+.kg-card-body ul li::before {
+  content: '・';
+  margin-right: 0.3em;
+}
