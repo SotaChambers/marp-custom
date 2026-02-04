@@ -70,7 +70,23 @@ jobs:
             fi
           done < changed_files.txt
 
-      - name: Commit generated files
+      - name: Upload PDF files as artifact
+        if: steps.changed-files.outputs.files_found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: marp-pdf-files
+          path: output/*.pdf
+          retention-days: 30
+
+      - name: Upload PPTX files as artifact
+        if: steps.changed-files.outputs.files_found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: marp-pptx-files
+          path: output/*.pptx
+          retention-days: 30
+
+      - name: Commit generated files (optional)
         if: steps.changed-files.outputs.files_found == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -110,10 +126,20 @@ jobs:
               return `- \`${file}\` → \`output/${basename}.pdf\` + \`output/${basename}.pptx\``;
             }).join('\n');
 
+            const runId = context.runId;
+            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
             const comment = '## 📊 Marp資料を自動生成しました\n\n' +
               '以下のファイルがPDFとPPTXに変換されました：\n\n' +
               fileList + '\n\n' +
-              '生成されたファイルは `output/` ディレクトリに保存されています。';
+              '### 📥 ダウンロード\n\n' +
+              '生成されたファイルは以下からダウンロードできます：\n\n' +
+              `- [📁 Artifacts をダウンロード](${artifactUrl})\n` +
+              '  - `marp-pdf-files` - PDF資料\n' +
+              '  - `marp-pptx-files` - PPTX資料\n\n' +
+              '**保存期間**: 30日間\n\n' +
+              '---\n\n' +
+              '💡 **ヒント**: ファイルはブランチの `output/` ディレクトリにもコミットされています。';
 
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
