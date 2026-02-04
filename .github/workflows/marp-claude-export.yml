@@ -1,0 +1,196 @@
+name: Marp Export with Claude Code
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'input/**/*.md'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+  actions: read
+
+jobs:
+  # ステップ1: Marp資料を生成
+  export-marp:
+    runs-on: ubuntu-latest
+    outputs:
+      files_found: ${{ steps.changed-files.outputs.files_found }}
+      changed_files: ${{ steps.changed-files.outputs.changed_files }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Marp CLI
+        run: npm install -g @marp-team/marp-cli
+
+      - name: Get changed Markdown files
+        id: changed-files
+        run: |
+          git diff --name-only --diff-filter=AM origin/${{ github.event.pull_request.base.ref }}...HEAD | grep '^input/.*\.md$' > changed_files.txt || true
+
+          if [ -s changed_files.txt ]; then
+            echo "files_found=true" >> $GITHUB_OUTPUT
+            FILES=$(cat changed_files.txt | tr '\n' ',' | sed 's/,$//')
+            echo "changed_files=$FILES" >> $GITHUB_OUTPUT
+            echo "✓ 変更されたファイル:"
+            cat changed_files.txt
+          else
+            echo "files_found=false" >> $GITHUB_OUTPUT
+            echo "⚠️  input/以下に変更されたMarkdownファイルはありません"
+          fi
+
+      - name: Create output directory
+        if: steps.changed-files.outputs.files_found == 'true'
+        run: mkdir -p output
+
+      - name: Export to PDF and PPTX
+        if: steps.changed-files.outputs.files_found == 'true'
+        run: |
+          export_summary=""
+
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              echo "📄 処理中: $file"
+              basename=$(basename "$file" .md)
+
+              # PDFに変換
+              if marp "$file" --theme theme/theme.css --pdf --allow-local-files -o "output/${basename}.pdf"; then
+                echo "✓ PDFを生成: output/${basename}.pdf"
+                export_summary="${export_summary}\n✓ ${basename}.pdf"
+              else
+                echo "✗ PDF生成失敗: $file"
+                export_summary="${export_summary}\n✗ ${basename}.pdf (失敗)"
+              fi
+
+              # PPTXに変換
+              if marp "$file" --theme theme/theme.css --pptx --allow-local-files -o "output/${basename}.pptx"; then
+                echo "✓ PPTXを生成: output/${basename}.pptx"
+                export_summary="${export_summary}\n✓ ${basename}.pptx"
+              else
+                echo "✗ PPTX生成失敗: $file"
+                export_summary="${export_summary}\n✗ ${basename}.pptx (失敗)"
+              fi
+
+              echo "---"
+            fi
+          done < changed_files.txt
+
+          echo -e "$export_summary" > export_summary.txt
+
+      - name: Commit generated files
+        if: steps.changed-files.outputs.files_found == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add output/*.pdf output/*.pptx 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "⚠️  新しい変更はありません"
+          else
+            git commit -m "🤖 自動生成: Marp資料をPDF/PPTXにエクスポート" \
+                       -m "Co-Authored-By: GitHub Actions <github-actions[bot]@users.noreply.github.com>"
+            git push
+            echo "✓ 変更をプッシュしました"
+          fi
+
+      - name: Upload export summary
+        if: steps.changed-files.outputs.files_found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-summary
+          path: export_summary.txt
+          retention-days: 1
+
+  # ステップ2: Claude Codeによる品質チェック（オプション）
+  claude-quality-check:
+    needs: export-marp
+    if: needs.export-marp.outputs.files_found == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Trigger Claude Code for quality check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const files = '${{ needs.export-marp.outputs.changed_files }}'.split(',');
+
+            const fileList = files.map(f => '- `' + f + '`').join('\n');
+
+            const comment = '@claude 以下のスライドファイルに対して品質チェックを実施してください：\n\n' +
+              fileList + '\n\n' +
+              '以下の観点でチェックしてください：\n' +
+              '1. テーマの適切な使用（title/top/mainクラス）\n' +
+              '2. コンテンツの整合性\n' +
+              '3. デザインガイドラインの準拠\n' +
+              '4. 改善提案\n\n' +
+              '`/test_slide` コマンドを使用して各ファイルをチェックしてください。';
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  # ステップ3: エクスポート結果をPRにコメント
+  comment-result:
+    needs: export-marp
+    if: needs.export-marp.outputs.files_found == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download export summary
+        uses: actions/download-artifact@v4
+        with:
+          name: export-summary
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let summary = '';
+            try {
+              summary = fs.readFileSync('export_summary.txt', 'utf8');
+            } catch (error) {
+              summary = '（サマリーの読み込みに失敗しました）';
+            }
+
+            const files = '${{ needs.export-marp.outputs.changed_files }}'.split(',');
+            const fileList = files.map(file => {
+              const basename = file.replace('input/', '').replace('.md', '');
+              return '- 📄 `' + file + '`\n  - 📕 `output/' + basename + '.pdf`\n  - 📊 `output/' + basename + '.pptx`';
+            }).join('\n');
+
+            const comment = '## 📊 Marp資料を自動生成しました\n\n' +
+              '### 生成されたファイル\n\n' +
+              fileList + '\n\n' +
+              '### 生成結果\n\n' +
+              '```\n' + summary + '\n```\n\n' +
+              '生成されたファイルは `output/` ディレクトリに保存され、自動的にコミットされました。\n\n' +
+              '---\n\n' +
+              '💡 **ヒント**: Claude Codeによる品質チェックを実施する場合は、別のジョブで `@claude` をメンションしてください。';
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

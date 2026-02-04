@@ -1,0 +1,127 @@
+name: Marp Export to PDF and PPTX
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'input/**/*.md'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  export-marp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 変更履歴を取得するため
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Marp CLI
+        run: npm install -g @marp-team/marp-cli
+
+      - name: Get changed Markdown files
+        id: changed-files
+        run: |
+          # PRで追加または変更されたinput/*.mdファイルを取得
+          git diff --name-only --diff-filter=AM origin/${{ github.event.pull_request.base.ref }}...HEAD | grep '^input/.*\.md$' > changed_files.txt || true
+
+          if [ -s changed_files.txt ]; then
+            echo "files_found=true" >> $GITHUB_OUTPUT
+            echo "変更されたファイル:"
+            cat changed_files.txt
+          else
+            echo "files_found=false" >> $GITHUB_OUTPUT
+            echo "input/以下に変更されたMarkdownファイルはありません"
+          fi
+
+      - name: Create output directory
+        if: steps.changed-files.outputs.files_found == 'true'
+        run: mkdir -p output
+
+      - name: Export to PDF and PPTX
+        if: steps.changed-files.outputs.files_found == 'true'
+        run: |
+          while IFS= read -r file; do
+            if [ -f "$file" ]; then
+              echo "処理中: $file"
+
+              # ファイル名（拡張子なし）を取得
+              basename=$(basename "$file" .md)
+
+              # PDFに変換
+              echo "PDFを生成中: $basename.pdf"
+              marp "$file" --theme theme/theme.css --pdf --allow-local-files -o "output/${basename}.pdf"
+
+              # PPTXに変換
+              echo "PPTXを生成中: $basename.pptx"
+              marp "$file" --theme theme/theme.css --pptx --allow-local-files -o "output/${basename}.pptx"
+
+              echo "✓ 完了: $basename"
+            fi
+          done < changed_files.txt
+
+      - name: Commit generated files
+        if: steps.changed-files.outputs.files_found == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add output/*.pdf output/*.pptx 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "新しい変更はありません"
+          else
+            git commit -m "🤖 自動生成: PDF/PPTX資料をエクスポート" \
+                       -m "Co-Authored-By: GitHub Actions <github-actions[bot]@users.noreply.github.com>"
+            git push
+          fi
+
+      - name: Comment on PR
+        if: steps.changed-files.outputs.files_found == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            let changedFiles = [];
+            try {
+              changedFiles = fs.readFileSync('changed_files.txt', 'utf8').trim().split('\n').filter(f => f);
+            } catch (error) {
+              console.log('changed_files.txt が見つかりません');
+              return;
+            }
+
+            if (changedFiles.length === 0) {
+              return;
+            }
+
+            const fileList = changedFiles.map(file => {
+              const basename = file.replace('input/', '').replace('.md', '');
+              return `- \`${file}\` → \`output/${basename}.pdf\` + \`output/${basename}.pptx\``;
+            }).join('\n');
+
+            const comment = '## 📊 Marp資料を自動生成しました\n\n' +
+              '以下のファイルがPDFとPPTXに変換されました：\n\n' +
+              fileList + '\n\n' +
+              '生成されたファイルは `output/` ディレクトリに保存されています。';
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: No files to process
+        if: steps.changed-files.outputs.files_found == 'false'
+        run: echo "input/以下にMarkdownファイルの変更がないため、スキップします"
