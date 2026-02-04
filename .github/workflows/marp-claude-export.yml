@@ -32,6 +32,11 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install Japanese fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-noto-cjk fonts-noto-cjk-extra
+
       - name: Install Marp CLI
         run: npm install -g @marp-team/marp-cli
 
@@ -89,22 +94,21 @@ jobs:
 
           echo -e "$export_summary" > export_summary.txt
 
-      - name: Commit generated files
+      - name: Upload PDF files as artifact
         if: steps.changed-files.outputs.files_found == 'true'
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
+        uses: actions/upload-artifact@v4
+        with:
+          name: marp-pdf-files
+          path: output/*.pdf
+          retention-days: 30
 
-          git add output/*.pdf output/*.pptx 2>/dev/null || true
-
-          if git diff --cached --quiet; then
-            echo "⚠️  新しい変更はありません"
-          else
-            git commit -m "🤖 自動生成: Marp資料をPDF/PPTXにエクスポート" \
-                       -m "Co-Authored-By: GitHub Actions <github-actions[bot]@users.noreply.github.com>"
-            git push
-            echo "✓ 変更をプッシュしました"
-          fi
+      - name: Upload PPTX files as artifact
+        if: steps.changed-files.outputs.files_found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: marp-pptx-files
+          path: output/*.pptx
+          retention-days: 30
 
       - name: Upload export summary
         if: steps.changed-files.outputs.files_found == 'true'
@@ -179,14 +183,20 @@ jobs:
               return '- 📄 `' + file + '`\n  - 📕 `output/' + basename + '.pdf`\n  - 📊 `output/' + basename + '.pptx`';
             }).join('\n');
 
+            const runId = context.runId;
+            const artifactUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
             const comment = '## 📊 Marp資料を自動生成しました\n\n' +
               '### 生成されたファイル\n\n' +
               fileList + '\n\n' +
               '### 生成結果\n\n' +
               '```\n' + summary + '\n```\n\n' +
-              '生成されたファイルは `output/` ディレクトリに保存され、自動的にコミットされました。\n\n' +
-              '---\n\n' +
-              '💡 **ヒント**: Claude Codeによる品質チェックを実施する場合は、別のジョブで `@claude` をメンションしてください。';
+              '### 📥 ダウンロード\n\n' +
+              '生成されたファイルは以下からダウンロードできます：\n\n' +
+              `- [📁 Artifacts をダウンロード](${artifactUrl})\n` +
+              '  - `marp-pdf-files` - PDF資料\n' +
+              '  - `marp-pptx-files` - PPTX資料\n\n' +
+              '**保存期間**: 30日間';
 
             await github.rest.issues.createComment({
               issue_number: context.issue.number,

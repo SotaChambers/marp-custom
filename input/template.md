@@ -1,59 +1,109 @@
-# プレゼンタイトル
+---
+marp: true
+theme: theme
+class: title
+size: 16:9
+footer: "(C)  KG motors INC. All Rights Reserved."
+---
 
-会社名 / 発表者名
+<!-- SLIDE 1: カバー（title） -->
+
+# タイトル
+
+KGモーターズ株式会社
+
 YYYY/MM/DD
 
----
-
-## セクション1のタイトル
-
-### ポイント1
-- 箇条書き項目1
-- 箇条書き項目2
-- 箇条書き項目3
-
-### ポイント2
-説明文をここに書く。
-
-ポイント: 強調したい内容はこのように書くとkg-calloutに変換される。
+![ロゴ](../imgs/KG_LOGO_SMALL.png)
+![カスタム](../imgs/mibot.png)
 
 ---
+<!-- class: top -->
 
-## セクション2のタイトル
+<!-- SLIDE 2: セクション区切り（top） -->
 
-### 比較・対比（2カラム向き）
+# 00 | タイトル
 
-左側の内容:
-- 項目A
-- 項目B
+---
+<!-- class: -->
 
-右側の内容:
-- 項目X
-- 項目Y
+# コールアウト
+
+<div class="kg-callout">
+<strong>ポイント：</strong> mibotは音声認識と自然言語処理を組み合わせ、ドライバーの意図を高精度で理解できます。
+</div>
+
+<hr class="kg-divider">
+
+<div class="kg-callout warning">
+<strong>注意：</strong> 音声コマンドの精度は走行環境や周囲のノイズに影響を受けます。
+</div>
 
 ---
 
-## セクション3のタイトル
+<!-- SLIDE 5: 二列レイアウト -->
 
-### スペック情報（kg-spec向き）
+# n列分割
 
-乗車定員: 1名
-最高速度: 60km/h
-航続距離: 100km
+<div class="kg-two-col">
+<div class="col">
 
-### カード情報（kg-card向き）
+### 音声処理層
+- エンドツーエンド音声認識モデル
+- リアルタイム感情分析
+- ノイズ耐性フィルタ
 
-#### カードタイトル
-カードの説明文
-- 詳細項目1
-- 詳細項目2
+</div>
+<div class="col">
+
+### 応答生成層
+- 軽量LLMの車内デプロイ
+- エッジ＋クラウドの混合推論
+- キャラクター性の維持モジュール
+
+</div>
+</div>
 
 ---
 
-## まとめ
+<!-- class: -->
 
-注意: 重要な注意事項はこのように書く。
+<!-- SLIDE 8: 見出し階層＋区切り線 -->
 
-1. まとめポイント1
-2. まとめポイント2
-3. まとめポイント3
+# カード
+
+## カード1
+
+<div class="kg-spec">
+<span class="kg-spec-label">乗車定員</span>
+<span class="kg-spec-value">1名</span>
+</div>
+
+## カード2
+
+<div class="kg-info-panel">
+  <div class="kg-info-panel-label">1. XXX</div>
+  <div class="kg-info-panel-content">
+    <ul>
+      <li>YYYYYYYYYYYYY</li>
+      <li>ZZZZZZZZZZZZ</li>
+      <li>WWWWWWWWWWWW</li>
+    </ul>
+  </div>
+</div>
+
+## カード3
+
+<div class="kg-card">
+  <div class="kg-card-header">
+    開発
+  </div>
+  <div class="kg-card-body">
+    <strong>mibotがクルマとして動くためのソフトウェアを作る</strong>
+    <ul>
+      <li>YYYYYYYYYYYYY</li>
+      <li>ZZZZZZZZZZZZ</li>
+      <li>WWWWWWWWWWWW</li>
+    </ul>
+  </div>
+</div>
